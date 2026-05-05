@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Taemin Kim · Backend Engineer Portfolio</title>
+  <link rel="stylesheet" href="portfolio-readme.css" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body class="theme-readme">
+  <div id="root"></div>
+
+  <script type="text/babel" src="data.jsx"></script>
+  <script type="text/babel" src="tistory.jsx"></script>
+
+  <script type="text/babel" data-presets="env,react">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "theme": "dark",
+      "language": "ko"
+    }/*EDITMODE-END*/;
+
+    function App() {
+      const [lang, setLang] = useState(TWEAK_DEFAULTS.language);
+      const [theme, setTheme] = useState(TWEAK_DEFAULTS.theme);
+      const [active, setActive] = useState('about');
+      const [writings, setWritings] = useState(null);
+      const [writingsErr, setWritingsErr] = useState(false);
+      const sectionsRef = useRef({});
+
+      const D = window.PORTFOLIO_DATA[lang];
+
+      // Persist tweaks
+      useEffect(() => {
+        document.documentElement.lang = lang;
+        document.body.classList.toggle('light', theme === 'light');
+        try {
+          window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { theme, language: lang } }, '*');
+        } catch (e) {}
+      }, [theme, lang]);
+
+      // Fetch Tistory RSS once
+      useEffect(() => {
+        let live = true;
+        window.fetchTistoryRSS(D.blogUrl).then(items => {
+          if (!live) return;
+          if (items && items.length) setWritings(items);
+          else setWritingsErr(true);
+        });
+        return () => { live = false; };
+      }, []);
+
+      // Scrollspy
+      useEffect(() => {
+        const obs = new IntersectionObserver(entries => {
+          const visible = entries.filter(e => e.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+          if (visible) setActive(visible.target.id);
+        }, { rootMargin: '-20% 0px -55% 0px', threshold: [0, 0.2, 0.5, 1] });
+        Object.values(sectionsRef.current).forEach(el => el && obs.observe(el));
+        return () => obs.disconnect();
+      }, [lang]);
+
+      const sections = [
+        { id: 'about',        icon: '◉', label: D.nav.about,        file: 'README.md' },
+        { id: 'experience',   icon: '◆', label: D.nav.experience,   file: 'experience.md' },
+        { id: 'projects',     icon: '◇', label: D.nav.projects,     file: 'projects/' },
+        { id: 'stack',        icon: '⊞', label: D.nav.stack,        file: 'stack.yml' },
+        { id: 'architecture', icon: '⌬', label: D.nav.architecture, file: 'architecture.md' },
+        { id: 'writings',     icon: '✎', label: D.nav.writings,     file: 'writings/' },
+        { id: 'education',    icon: '⌂', label: D.nav.education,    file: 'education.md' },
+        { id: 'contact',      icon: '✉', label: D.nav.contact,      file: 'contact.txt' }
+      ];
+
+      const scrollTo = id => {
+        const el = sectionsRef.current[id];
+        if (el) window.scrollTo({ top: el.offsetTop - 16, behavior: 'smooth' });
+      };
+
+      return (
+        <div className="app">
+          <RepoBar D={D} lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} />
+          <div className="layout">
+            <Sidebar sections={sections} active={active} onPick={scrollTo} D={D} />
+            <main className="content">
+              <Section id="about" sref={sectionsRef} title="README.md" icon="◉" meta={`${D.role} · ${D.location}`}>
+                <h1 className="h1">{D.name}<span className="name-en">{D.nameEn}</span></h1>
+                <p className="tagline">{D.tagline}</p>
+                <p className="tagline-sub">{D.subTagline}</p>
+                <div className="badges">
+                  <span className="badge"><b>{D.role}</b></span>
+                  <span className="badge">{lang === 'ko' ? '경력' : 'years'} · <b>{D.yearsExp}+</b></span>
+                  <span className="badge">📍 {D.location}</span>
+                  <span className="badge ok"><span className="dot" /> {D.status}</span>
+                </div>
+
+                <h2 className="h2" style={{ marginTop: 32 }}><span className="h2-hash">#</span>{lang === 'ko' ? '핵심 임팩트' : 'Key impact'}</h2>
+                <div className="headlines">
+                  {D.headlines.map((h, i) => (
+                    <div key={i} className="headline">
+                      <div className="headline-metric">{h.metric}</div>
+                      <div className="headline-label">{h.label}</div>
+                      <div className="headline-detail">{h.detail}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <h2 className="h2" style={{ marginTop: 32 }}><span className="h2-hash">#</span>{lang === 'ko' ? '소개' : 'Introduction'}</h2>
+                {D.about.map((p, i) => <p key={i} className="p">{p}</p>)}
+
+                <div className="stats">
+                  {D.stats.map(s => (
+                    <div key={s.label} className="stat">
+                      <div className="stat-val">{s.value}</div>
+                      <div className="stat-lbl">{s.label}</div>
+                      {s.note && <div className="stat-note">{s.note}</div>}
+                    </div>
+                  ))}
+                </div>
+
+                <h2 className="h2" style={{ marginTop: 32 }}><span className="h2-hash">#</span>{lang === 'ko' ? '저는 이렇게 일합니다' : 'How I work'}</h2>
+                <div className="values-grid">
+                  {D.values.map((v, i) => (
+                    <div key={i} className="value-card">
+                      <div className="value-num">{String(i + 1).padStart(2, '0')}</div>
+                      <div className="value-title">{v.title}</div>
+                      <div className="value-body">{v.body}</div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+
+              <Section id="experience" sref={sectionsRef} title="experience.md" icon="◆">
+                <h2 className="h2"><span className="h2-hash">#</span>{D.nav.experience}</h2>
+                <div className="exp-list">
+                  {D.experience.map((job, i) => (
+                    <div key={i} className="exp">
+                      <div className="exp-bar">
+                        <span className="exp-dot" />
+                        {i < D.experience.length - 1 && <span className="exp-line" />}
+                      </div>
+                      <div className="exp-body">
+                        <div className="exp-head">
+                          <h3 className="h3">{job.company}</h3>
+                          <span className="exp-period">{job.period}</span>
+                        </div>
+                        <div className="exp-sub">
+                          <span className="exp-sub-role">{job.type}</span>
+                          {job.domain && <><span style={{ color: 'var(--text-faint)' }}>·</span><span className="exp-sub-domain">{job.domain}</span></>}
+                        </div>
+                        <div className="exp-stack">
+                          {job.stack.map(s => <code key={s} className="code-tag">{s}</code>)}
+                        </div>
+                        {job.bullets.map((b, j) => (
+                          <details key={j} className="detail" open={i === 0 && j === 0}>
+                            <summary className="detail-summary">
+                              <span className="detail-marker">▸</span>
+                              <span className="detail-title">{b.title}</span>
+                            </summary>
+                            <div className="detail-body">
+                              <div className="psr-row">
+                                <span className="psr-label psr-problem">{D.ui.problem}</span>
+                                <p>{b.problem}</p>
+                              </div>
+                              <div className="psr-row">
+                                <span className="psr-label psr-solution">{D.ui.solution}</span>
+                                <p>{b.solution}</p>
+                              </div>
+                              <div className="psr-row">
+                                <span className="psr-label psr-result">{D.ui.result}</span>
+                                <p>{b.impact}</p>
+                              </div>
+                            </div>
+                          </details>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+
+              <Section id="projects" sref={sectionsRef} title="projects/" icon="◇">
+                <h2 className="h2"><span className="h2-hash">#</span>{D.nav.projects}</h2>
+                {D.projects.map((p, i) => (
+                  <div key={i} style={{ marginBottom: 28 }}>
+                    <div className="proj-hero">
+                      <div>
+                        <div className="proj-name"><span className="proj-icon">▸</span>{p.name}</div>
+                        <div className="proj-subtitle">{p.subtitle} · {p.period}</div>
+                        <p className="proj-desc">{p.description}</p>
+                        <div className="proj-meta">
+                          <div><span className="proj-meta-lbl">{lang === 'ko' ? '팀' : 'team'}</span><span className="proj-meta-val">{p.team}</span></div>
+                          <div><span className="proj-meta-lbl">{lang === 'ko' ? '역할' : 'role'}</span><span className="proj-meta-val">{p.myRole}</span></div>
+                          <div><span className="proj-meta-lbl">{lang === 'ko' ? '사용자' : 'users'}</span><span className="proj-meta-val">{p.users}</span></div>
+                          <div><span className="proj-meta-lbl">{lang === 'ko' ? '기간' : 'period'}</span><span className="proj-meta-val">{p.period}</span></div>
+                        </div>
+                      </div>
+                      <div className="proj-cta">
+                        {p.liveUrl && <a className="btn primary" href={p.liveUrl} target="_blank">↗ {D.ui.live}</a>}
+                        {p.repoUrl && <a className="btn" href={p.repoUrl} target="_blank">⎇ {D.ui.repo}</a>}
+                        <div className="exp-stack" style={{ margin: '8px 0 0' }}>
+                          {p.stack.map(s => <code key={s} className="code-tag">{s}</code>)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="proj-resp">
+                      <h4>{lang === 'ko' ? '담당 업무' : 'Responsibilities'}</h4>
+                      <ul>{p.responsibilities.map((r, k) => <li key={k}>{r}</li>)}</ul>
+                    </div>
+
+                    {p.highlights.map((h, k) => (
+                      <div key={k} className="proj-highlight">
+                        <div className="proj-h-head">
+                          <span className="proj-h-title">{h.title}</span>
+                          <span className="proj-h-metric">{h.metric}</span>
+                        </div>
+                        <div className="psr-row">
+                          <span className="psr-label psr-problem">{D.ui.problem}</span>
+                          <p>{h.problem}</p>
+                        </div>
+                        <div className="psr-row">
+                          <span className="psr-label psr-solution">{D.ui.solution}</span>
+                          <p>{h.solution}</p>
+                        </div>
+                        <div className="psr-row">
+                          <span className="psr-label psr-result">{D.ui.result}</span>
+                          <p>{h.impact}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </Section>
+
+              <Section id="stack" sref={sectionsRef} title="stack.yml" icon="⊞">
+                <h2 className="h2"><span className="h2-hash">#</span>{D.nav.stack}</h2>
+                <pre className="yaml-block">
+                  <span className="ycomment"># {lang === 'ko' ? '주력 기술 스택 — 이력서 기반' : 'core stack — from resume'}</span>{'\n'}
+                  {Object.entries(D.stack).map(([cat, items]) => (
+                    <span key={cat}>
+                      <span className="yk">{cat.toLowerCase()}</span><span className="yc">:</span>{'\n'}
+                      {items.map(it => (
+                        <span key={it}>{'  '}<span className="yd">-</span> <span className="yv">{it}</span>{'\n'}</span>
+                      ))}
+                    </span>
+                  ))}
+                </pre>
+              </Section>
+
+              <Section id="architecture" sref={sectionsRef} title="architecture.md" icon="⌬">
+                <h2 className="h2"><span className="h2-hash">#</span>{D.nav.architecture}</h2>
+                <p className="p" style={{ color: 'var(--text-dim)' }}>
+                  {lang === 'ko'
+                    ? '실제로 풀었던 시스템 설계 문제와 의사결정의 맥락.'
+                    : 'Real system-design problems and the context behind each decision.'}
+                </p>
+                {D.architecture.map((a, i) => (
+                  <div key={i} className="arch-card">
+                    <div className="arch-title">{a.title}</div>
+                    <div className="arch-context">↳ {a.context}</div>
+                    <div className="psr-row">
+                      <span className="psr-label psr-problem">{D.ui.problem}</span>
+                      <p>{a.problem}</p>
+                    </div>
+                    <div className="psr-row">
+                      <span className="psr-label psr-decision">{D.ui.decision}</span>
+                      <p>{a.decision}</p>
+                    </div>
+                    <div className="psr-row">
+                      <span className="psr-label psr-result">{D.ui.result}</span>
+                      <p>{a.result}</p>
+                    </div>
+                  </div>
+                ))}
+              </Section>
+
+              <Section id="writings" sref={sectionsRef} title="writings/" icon="✎" meta="Tistory · live RSS">
+                <h2 className="h2"><span className="h2-hash">#</span>{D.nav.writings}</h2>
+                {!writings && !writingsErr && (
+                  <div className="blog-loading"><span className="spinner" /> {lang === 'ko' ? 'Tistory에서 글을 불러오는 중...' : 'Loading from Tistory...'}</div>
+                )}
+                {writingsErr && (
+                  <p className="p" style={{ color: 'var(--text-dim)' }}>
+                    {lang === 'ko' ? 'RSS 불러오기에 실패했습니다. 블로그를 직접 방문해 주세요.' : 'Failed to load RSS. Please visit the blog directly.'}
+                  </p>
+                )}
+                {writings && (
+                  <div className="writings">
+                    {writings.map((w, i) => (
+                      <a key={i} href={w.url} target="_blank" className="writing" style={{ display: 'grid', textDecoration: 'none' }}>
+                        <span className="writing-date">{w.date}</span>
+                        <span>
+                          <span className="writing-title">{w.title}</span>
+                          {w.excerpt && <div className="writing-excerpt">{w.excerpt}…</div>}
+                        </span>
+                        <span className="writing-arrow">→</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+                <a className="blog-link" href={D.blogUrl} target="_blank">↗ {D.ui.viewBlog} — {D.blog}</a>
+              </Section>
+
+              <Section id="education" sref={sectionsRef} title="education.md" icon="⌂">
+                <h2 className="h2"><span className="h2-hash">#</span>{D.nav.education}</h2>
+                <div className="edu-grid">
+                  <div className="edu-card">
+                    <div className="edu-school">{D.education.school}</div>
+                    <div className="edu-degree">{D.education.degree}</div>
+                    <div className="edu-period">{D.education.period}</div>
+                  </div>
+                  {D.certs.map((c, i) => (
+                    <div key={i} className="cert-card">
+                      <div className="edu-school">{c.name}</div>
+                      <div className="edu-degree">{c.issuer}</div>
+                      <div className="edu-period">{c.date}</div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+
+              <Section id="contact" sref={sectionsRef} title="contact.txt" icon="✉">
+                <h2 className="h2"><span className="h2-hash">#</span>{D.nav.contact}</h2>
+                <ContactBlock D={D} lang={lang} />
+                <div className="footer">
+                  <span>—— EOF · {D.ui.copyright}</span>
+                  <span>{D.ui.lastUpdated}: 2026.05</span>
+                </div>
+              </Section>
+            </main>
+          </div>
+        </div>
+      );
+    }
+
+    function RepoBar({ D, lang, setLang, theme, setTheme }) {
+      return (
+        <div className="repo-bar">
+          <span className="repo-icon">⎘</span>
+          <span className="repo-path">
+            <span className="owner">{D.handle}</span>
+            <span className="slash">/</span>
+            <span className="name">portfolio</span>
+          </span>
+          <span className="pill">⎇ main</span>
+          <span className="meta">{lang === 'ko' ? '4년차 백엔드 엔지니어' : '4y backend engineer'}</span>
+          <span className="spacer" />
+          <span className="meta">★ 142 · ⑂ 23</span>
+          <div className="controls">
+            <div className="pill-group">
+              <button className={lang === 'ko' ? 'active' : ''} onClick={() => setLang('ko')}>KO</button>
+              <button className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')}>EN</button>
+            </div>
+            <div className="pill-group">
+              <button className={theme === 'dark' ? 'active' : ''} onClick={() => setTheme('dark')}>● dark</button>
+              <button className={theme === 'light' ? 'active' : ''} onClick={() => setTheme('light')}>○ light</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function Sidebar({ sections, active, onPick, D }) {
+      return (
+        <aside className="sidebar">
+          <div className="sb-section-label"><span>files</span><span>{sections.length}</span></div>
+          <ul className="sb-tree">
+            {sections.map(s => (
+              <li key={s.id}>
+                <button className={`sb-item ${active === s.id ? 'active' : ''}`} onClick={() => onPick(s.id)}>
+                  <span className="sb-item-icon">{s.icon}</span>
+                  <span>{s.file}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="sb-divider" />
+          <div className="sb-langs">
+            <div className="sb-langbar">
+              <span style={{ width: '78%', background: 'var(--cyan)' }} />
+              <span style={{ width: '14%', background: 'var(--magenta)' }} />
+              <span style={{ width: '8%', background: 'var(--yellow)' }} />
+            </div>
+            <ul className="sb-lang-list">
+              <li><span className="sb-lang-dot" style={{ background: 'var(--cyan)' }} /> Java <span>78.0%</span></li>
+              <li><span className="sb-lang-dot" style={{ background: 'var(--magenta)' }} /> SQL <span>14.0%</span></li>
+              <li><span className="sb-lang-dot" style={{ background: 'var(--yellow)' }} /> Other <span>8.0%</span></li>
+            </ul>
+          </div>
+          <div className="sb-foot">
+            <span>● {D.handle}</span>
+            <span>{D.location}</span>
+          </div>
+        </aside>
+      );
+    }
+
+    function Section({ id, sref, title, icon, meta, children }) {
+      return (
+        <section id={id} ref={el => { sref.current[id] = el; }} className="section">
+          <div className="file-head">
+            <span className="file-icon">{icon}</span>
+            <span className="fname">{title}</span>
+            {meta && <span className="fmeta">{meta}</span>}
+          </div>
+          <div className="file-body">{children}</div>
+        </section>
+      );
+    }
+
+    function ContactBlock({ D, lang }) {
+      const [copied, setCopied] = useState(false);
+      const copy = () => {
+        navigator.clipboard.writeText(D.email);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      };
+      return (
+        <div className="contact-block">
+          <div className="contact-row">
+            <span className="contact-lbl">EMAIL</span>
+            <span className="contact-val"><a href={`mailto:${D.email}`}>{D.email}</a></span>
+            <button className={`copy-btn ${copied ? 'copied' : ''}`} onClick={copy}>
+              {copied ? '✓ ' + D.ui.copied : D.ui.copyEmail}
+            </button>
+          </div>
+          <div className="contact-row">
+            <span className="contact-lbl">GITHUB</span>
+            <span className="contact-val"><a href={D.githubUrl} target="_blank">{D.github}</a></span>
+          </div>
+          <div className="contact-row">
+            <span className="contact-lbl">LINKEDIN</span>
+            <span className="contact-val"><a href={D.linkedinUrl} target="_blank">{D.linkedin}</a></span>
+          </div>
+          <div className="contact-row">
+            <span className="contact-lbl">BLOG</span>
+            <span className="contact-val"><a href={D.blogUrl} target="_blank">{D.blog}</a></span>
+          </div>
+          <div className="contact-row">
+            <span className="contact-lbl">LATENCY</span>
+            <span style={{ color: 'var(--text)' }}>&lt; 24h <span style={{ color: 'var(--text-faint)' }}>({lang === 'ko' ? '평일' : 'weekday'})</span></span>
+          </div>
+          <div className="contact-row">
+            <span className="contact-lbl">STATUS</span>
+            <span style={{ color: 'var(--green)' }}>● {D.status}</span>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
