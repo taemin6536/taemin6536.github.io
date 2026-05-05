@@ -11,7 +11,9 @@ const PORTFOLIO_DATA = {
     tagline: "'어떤 기술을 쓰는가'보다 '왜 이 기술을 써야 하는가'를 먼저 묻습니다.",
     subTagline: "비즈니스 맥락에 맞는 최적의 설계로 가치를 만드는 백엔드 개발자.",
     location: "수도권 · 원격 OK",
-    status: "재직 중 · 좋은 제안 검토 중",
+    status: "재직 중 · (주)클로봇 · 좋은 제안 검토 중",
+    currentCompany: "(주)클로봇",
+    currentDomain: "CROMS · 이기종 로봇 관제 솔루션",
     email: "ktm6536@gmail.com",
     github: "github.com/taemin6536",
     githubUrl: "https://github.com/taemin6536",
@@ -34,17 +36,44 @@ const PORTFOLIO_DATA = {
     ],
 
     headlines: [
+      { metric: "VDA5050", label: "이기종 로봇 관제 프로토콜 개발", detail: "클로봇 CROMS · CRCS 단일 → 멀티 프로토콜" },
       { metric: "72% → 0%", label: "요청 실패율 개선", detail: "Kiring 좋아요 동시성 · Redis + Async Event" },
       { metric: "20%↑", label: "신규 기능 개발 속도", detail: "20K LoC 레거시 리팩토링" },
-      { metric: "70%↓", label: "장애 분석 시간 단축", detail: "Zabbix 선제 모니터링 도입" },
-      { metric: "8h", label: "RCE 취약점 전사 대응", detail: "CVE-2023-46604 · 무중단" }
+      { metric: "70%↓", label: "장애 분석 시간 단축", detail: "Zabbix 선제 모니터링 도입" }
     ],
 
     experience: [
       {
+        company: "(주)클로봇",
+        type: "Backend Engineer",
+        period: "2025.10 — 현재",
+        domain: "CROMS · 이기종 로봇 관제 솔루션",
+        bullets: [
+          {
+            title: "VDA5050 프로토콜 신규 도입 — 이기종 로봇 관제 확장",
+            problem: "기존 CROMS는 자체 CRCS 프로토콜만 지원해 동일 벤더 로봇 외에는 관제 불가. 글로벌 표준 호환 로봇 도입 시마다 새로운 통합 작업이 반복됨.",
+            solution: "VDA5050(MQTT 기반 AGV/AMR 표준) 어댑터를 신규 개발. 전략 패턴으로 프로토콜 처리 로직을 추상화하고 팩토리 패턴으로 로봇 타입별 핸들러를 동적 생성하여 CRCS와 VDA5050이 동일 인터페이스로 동작하도록 설계.",
+            impact: "이기종 로봇 관제 서비스 가능. 향후 신규 프로토콜(예: ROS2 등) 추가 시 어댑터만 구현하면 되는 확장 가능한 구조 확보."
+          },
+          {
+            title: "동시성 락 최적화로 관제 처리 성능 개선",
+            problem: "다수 로봇이 동일 자원(맵·경로·작업 큐)을 동시에 점유 요청. 굵은 단위 락(coarse-grained lock)으로 처리 처리량 제한 + 불필요한 대기 발생.",
+            solution: "락 범위를 도메인 단위로 세분화하고 임계 영역을 최소화. 충돌 가능성이 낮은 작업은 낙관적 락으로 전환, 로봇 단위로 락 키를 분리해 병렬도를 높임.",
+            impact: "로봇 관제 처리량 증가, 응답 지연 감소. 동시 작업 가능한 로봇 대수 확장."
+          },
+          {
+            title: "전략·팩토리 패턴 기반 아키텍처 정비",
+            problem: "신규 로봇 벤더·프로토콜이 추가될 때마다 if/switch 분기로 점점 비대해지는 핸들러. 신규 벤더 온보딩이 코드 전체에 영향.",
+            solution: "전략 패턴으로 프로토콜·벤더별 정책을 객체화하고, 팩토리 패턴으로 런타임에 적절한 전략을 주입. 기존 로직은 유지하면서 새 프로토콜 추가가 기존 코드 수정 없이 가능하도록 OCP 준수.",
+            impact: "신규 프로토콜·벤더 온보딩 시 변경 영향 최소화. 코드 가독성과 테스트 용이성 동시 확보."
+          }
+        ],
+        stack: ["Java", "Spring Boot", "MQTT", "VDA5050", "CRCS", "PostgreSQL", "Redis", "Docker"]
+      },
+      {
         company: "(주)키트웍스",
         type: "전임연구원 · Backend",
-        period: "2024.11 — 현재",
+        period: "2024.11 — 2025.09",
         domain: "현대자동차 이커머스 (캐스퍼)",
         bullets: [
           {
@@ -171,8 +200,9 @@ const PORTFOLIO_DATA = {
     stack: {
       Languages: ["Java", "SQL"],
       Frameworks: ["Spring Boot", "Spring Batch", "Spring Cloud", "JPA", "QueryDSL"],
-      Database: ["MySQL", "Redis"],
-      Messaging: ["ActiveMQ", "WebSocket", "Modbus"],
+      Database: ["MySQL", "PostgreSQL", "Redis"],
+      Messaging: ["MQTT", "VDA5050", "ActiveMQ", "WebSocket", "Modbus"],
+      Patterns: ["Strategy", "Factory", "Lock optimization"],
       Infra: ["AWS", "Docker", "Linux", "CI/CD"],
       Observability: ["Zabbix"],
       Tools: ["k6 (부하 테스트)", "Swagger", "Git"]
@@ -279,7 +309,9 @@ const PORTFOLIO_DATA = {
     tagline: "I ask 'why this technology' before 'which technology'.",
     subTagline: "A backend engineer who creates value through architecture that fits the business context.",
     location: "Seoul Metro · Remote OK",
-    status: "Currently employed · Open to great offers",
+    status: "Currently at Clobot · Open to great offers",
+    currentCompany: "Clobot Inc.",
+    currentDomain: "CROMS · Multi-vendor robot fleet",
     email: "ktm6536@gmail.com",
     github: "github.com/taemin6536",
     githubUrl: "https://github.com/taemin6536",
@@ -302,17 +334,44 @@ const PORTFOLIO_DATA = {
     ],
 
     headlines: [
+      { metric: "VDA5050", label: "multi-vendor robot protocol", detail: "Clobot CROMS · single → multi-protocol" },
       { metric: "72% → 0%", label: "request failure rate", detail: "Kiring concurrency · Redis + async events" },
       { metric: "+20%", label: "feature dev velocity", detail: "20K-LoC legacy refactor" },
-      { metric: "−70%", label: "incident triage time", detail: "Zabbix proactive monitoring" },
-      { metric: "8h", label: "company-wide RCE response", detail: "CVE-2023-46604 · zero downtime" }
+      { metric: "−70%", label: "incident triage time", detail: "Zabbix proactive monitoring" }
     ],
 
     experience: [
       {
+        company: "Clobot Inc.",
+        type: "Backend Engineer",
+        period: "Oct 2025 — Present",
+        domain: "CROMS · Multi-vendor robot fleet management",
+        bullets: [
+          {
+            title: "Introduced VDA5050 — multi-vendor robot orchestration",
+            problem: "CROMS only supported the in-house CRCS protocol, so any non-vendor robot required a fresh integration. Onboarding new robots was a recurring tax.",
+            solution: "Built a VDA5050 (MQTT-based AGV/AMR standard) adapter. Used the Strategy pattern to abstract protocol handling and the Factory pattern to dynamically resolve per-robot handlers — letting CRCS and VDA5050 sit behind the same interface.",
+            impact: "Heterogeneous robot fleets are now first-class. Future protocols (e.g. ROS2) only need an adapter implementation, not a system-wide change."
+          },
+          {
+            title: "Lock optimization for fleet throughput",
+            problem: "Many robots contended for shared resources (maps, routes, task queues). Coarse-grained locks throttled throughput and caused unnecessary waits.",
+            solution: "Narrowed lock scope to per-domain units, shrunk critical sections, and switched low-collision flows to optimistic locking. Sharded lock keys per robot to maximize parallelism.",
+            impact: "Higher throughput, lower latency, more concurrent robots supportable."
+          },
+          {
+            title: "Strategy + Factory architecture refactor",
+            problem: "Each new vendor/protocol grew if/switch branches in the handler — onboarding rippled through the codebase.",
+            solution: "Strategy pattern for per-protocol/per-vendor policies, Factory pattern to inject the right strategy at runtime. New protocols extend the system without modifying existing code (OCP).",
+            impact: "New protocol/vendor onboarding stays isolated. Code clarity and testability improved together."
+          }
+        ],
+        stack: ["Java", "Spring Boot", "MQTT", "VDA5050", "CRCS", "PostgreSQL", "Redis", "Docker"]
+      },
+      {
         company: "Kitworks Inc.",
         type: "Senior Researcher · Backend",
-        period: "Nov 2024 — Present",
+        period: "Nov 2024 — Sep 2025",
         domain: "Hyundai Casper E-commerce Platform",
         bullets: [
           {
@@ -439,14 +498,22 @@ const PORTFOLIO_DATA = {
     stack: {
       Languages: ["Java", "SQL"],
       Frameworks: ["Spring Boot", "Spring Batch", "Spring Cloud", "JPA", "QueryDSL"],
-      Database: ["MySQL", "Redis"],
-      Messaging: ["ActiveMQ", "WebSocket", "Modbus"],
+      Database: ["MySQL", "PostgreSQL", "Redis"],
+      Messaging: ["MQTT", "VDA5050", "ActiveMQ", "WebSocket", "Modbus"],
+      Patterns: ["Strategy", "Factory", "Lock optimization"],
       Infra: ["AWS", "Docker", "Linux", "CI/CD"],
       Observability: ["Zabbix"],
       Tools: ["k6 (load testing)", "Swagger", "Git"]
     },
 
     architecture: [
+      {
+        title: "Extensibility — Strategy + Factory for multi-vendor robot protocols",
+        context: "Clobot · CROMS",
+        problem: "CROMS only spoke the in-house CRCS protocol. Adding new vendors/protocols meant growing if/switch branches in handlers — onboarding rippled across the codebase.",
+        decision: "Strategy pattern objectifies per-protocol/per-vendor policies; Factory injects the right strategy at runtime. Built a VDA5050 adapter as a peer to CRCS behind the same interface (OCP).",
+        result: "Heterogeneous robot fleets supported. New protocols extend by adding an adapter — zero changes to existing code."
+      },
       {
         title: "Concurrency — Redis + async events to bypass write locks",
         context: "Kiring · 'Like' feature",
